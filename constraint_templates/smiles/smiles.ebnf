@@ -1,0 +1,57 @@
+root ::= smiles
+
+# SMILES EBNF (subset) converted from grammar.py:13-75
+# 说明：
+# - 采用 xgrammar/penman.ebnf 风格：root 开头，使用 ::= 与 |，并使用 * + ?
+# - 产生式左侧每个符号只定义一次
+# - 空产生式不使用“| 空”，而用 ? 或 * 来表达可选/重复
+
+smiles ::= component (dot component)*
+
+component ::= chain
+
+# chain ::= branched_atom ((bond? branched_atom))*
+# 按原 CFG 的两种扩展（隐式连接 或 显式 bond），统一写成可重复片段
+chain ::= branched_atom chain_tail*
+chain_tail ::= bond? branched_atom
+
+branched_atom ::= atom ringbond* branch*
+
+branch ::= "(" (bond? chain) ")"
+
+ringbond ::= bond? ringnum
+
+ringnum ::= digit | "%" digit digit
+
+bond ::= "-" | "=" | "#" | ":" | "/" | "\\"
+
+dot ::= "."
+
+atom ::= bracket_atom | aliphatic_organic | aromatic_organic
+
+aliphatic_organic ::= "B" | "C" | "N" | "O" | "S" | "P" | "F" | "I" | "Cl" | "Br"
+
+aromatic_organic ::= "b" | "c" | "n" | "o" | "s" | "p"
+
+bracket_atom ::= "[" bracket_inner "]"
+
+bracket_inner ::= isotope? symbol chiral? hcount? charge?
+
+# optional isotope
+isotope ::= number
+
+symbol ::= element_symbol | aromatic_symbol
+
+element_symbol ::= "H" | "He" | "Li" | "Be" | "B" | "C" | "N" | "O" | "F" | "Ne" | "Na" | "Mg" | "Al" | "Si" | "P" | "S" | "Cl" | "Ar" | "K" | "Ca" | "Sc" | "Ti" | "V" | "Cr" | "Mn" | "Fe" | "Co" | "Ni" | "Cu" | "Zn" | "Ga" | "Ge" | "As" | "Se" | "Br" | "Kr" | "Rb" | "Sr" | "Y" | "Zr" | "Nb" | "Mo" | "Tc" | "Ru" | "Rh" | "Pd" | "Ag" | "Cd" | "In" | "Sn" | "Sb" | "Te" | "I" | "Xe" | "Cs" | "Ba" | "Hf" | "Ta" | "W" | "Re" | "Os" | "Ir" | "Pt" | "Au" | "Hg" | "Tl" | "Pb" | "Bi" | "Po" | "At" | "Rn" | "Fr" | "Ra" | "Rf" | "Db" | "Sg" | "Bh" | "Hs" | "Mt" | "Ds" | "Rg" | "Cn" | "Fl" | "Lv" | "La" | "Ce" | "Pr" | "Nd" | "Pm" | "Sm" | "Eu" | "Gd" | "Tb" | "Dy" | "Ho" | "Er" | "Tm" | "Yb" | "Lu" | "Ac" | "Th" | "Pa" | "U" | "Np" | "Pu" | "Am" | "Cm" | "Bk" | "Cf" | "Es" | "Fm" | "Md" | "No" | "Lr"
+
+aromatic_symbol ::= "b" | "c" | "n" | "o" | "p" | "s" | "se" | "as"
+
+chiral ::= "@" | "@@" | "@H" | "@@H"
+
+hcount ::= "H" | "H" digit
+
+charge ::= "+" | "-" | "+" digit | "-" digit | "+" digit digit | "-" digit digit
+
+# numbers
+number ::= digit+
+digit ::= [0-9]

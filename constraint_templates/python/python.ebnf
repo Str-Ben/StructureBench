@@ -1,0 +1,220 @@
+root ::= file
+
+# 顶层：可选若干 import + 一个函数
+# file ::= newline* (import_stmt newline)* funcdef newline*
+file ::= funcdef newline*
+
+
+import_stmt ::= "import" ws dotted_name
+            | "from" ws dotted_name ws "import" ws import_targets
+
+import_targets ::= name (comma ws? name)*
+                | "*"
+
+dotted_name ::= name (dot name)*
+
+# ---------------- function ----------------
+
+funcdef ::= "def" ws name lparen param_list? rparen (ws arrow ws type_name)? colon block1
+
+param_list ::= name (comma ws? name)*
+
+# ---------------- indentation (分层缩进，最多 10 层) ----------------
+# 约束策略：每一层 blockN 只允许以 INDENTN 开头的行。
+# if/for/while 的 body 进入下一层 block(N+1)。
+
+block1 ::= newline block1_line+
+block1_line ::= indent1 simple_stmt newline | indent1 if_stmt1 | indent1 for_stmt1 | indent1 while_stmt1
+
+block2 ::= newline block2_line+
+block2_line ::= indent2 simple_stmt newline | indent2 if_stmt2 | indent2 for_stmt2 | indent2 while_stmt2
+
+block3 ::= newline block3_line+
+block3_line ::= indent3 simple_stmt newline | indent3 if_stmt3 | indent3 for_stmt3 | indent3 while_stmt3
+
+block4 ::= newline block4_line+
+block4_line ::= indent4 simple_stmt newline | indent4 if_stmt4 | indent4 for_stmt4 | indent4 while_stmt4
+
+block5 ::= newline block5_line+
+block5_line ::= indent5 simple_stmt newline | indent5 if_stmt5 | indent5 for_stmt5 | indent5 while_stmt5
+
+block6 ::= newline block6_line+
+block6_line ::= indent6 simple_stmt newline | indent6 if_stmt6 | indent6 for_stmt6 | indent6 while_stmt6
+
+block7 ::= newline block7_line+
+block7_line ::= indent7 simple_stmt newline | indent7 if_stmt7 | indent7 for_stmt7 | indent7 while_stmt7
+
+block8 ::= newline block8_line+
+block8_line ::= indent8 simple_stmt newline | indent8 if_stmt8 | indent8 for_stmt8 | indent8 while_stmt8
+
+block9 ::= newline block9_line+
+block9_line ::= indent9 simple_stmt newline | indent9 if_stmt9 | indent9 for_stmt9 | indent9 while_stmt9
+
+block10 ::= newline block10_line+
+block10_line ::= indent10 simple_stmt newline | indent10 if_stmt10 | indent10 for_stmt10 | indent10 while_stmt10
+
+# 最深层不再继续嵌套（仍允许出现 if/for/while 语句头，但它们的 body 也只能在 block10 内继续写）
+if_stmt10 ::= "if" ws expr colon block10 ("elif" ws expr colon block10)* ("else" colon block10)?
+for_stmt10 ::= "for" ws target ws "in" ws expr colon block10 ("else" colon block10)?
+while_stmt10 ::= "while" ws expr colon block10 ("else" colon block10)?
+
+# 1-9 层：进入下一层
+if_stmt1 ::= "if" ws expr colon block2 ("elif" ws expr colon block2)* ("else" colon block2)?
+for_stmt1 ::= "for" ws target ws "in" ws expr colon block2 ("else" colon block2)?
+while_stmt1 ::= "while" ws expr colon block2 ("else" colon block2)?
+
+if_stmt2 ::= "if" ws expr colon block3 ("elif" ws expr colon block3)* ("else" colon block3)?
+for_stmt2 ::= "for" ws target ws "in" ws expr colon block3 ("else" colon block3)?
+while_stmt2 ::= "while" ws expr colon block3 ("else" colon block3)?
+
+if_stmt3 ::= "if" ws expr colon block4 ("elif" ws expr colon block4)* ("else" colon block4)?
+for_stmt3 ::= "for" ws target ws "in" ws expr colon block4 ("else" colon block4)?
+while_stmt3 ::= "while" ws expr colon block4 ("else" colon block4)?
+
+if_stmt4 ::= "if" ws expr colon block5 ("elif" ws expr colon block5)* ("else" colon block5)?
+for_stmt4 ::= "for" ws target ws "in" ws expr colon block5 ("else" colon block5)?
+while_stmt4 ::= "while" ws expr colon block5 ("else" colon block5)?
+
+if_stmt5 ::= "if" ws expr colon block6 ("elif" ws expr colon block6)* ("else" colon block6)?
+for_stmt5 ::= "for" ws target ws "in" ws expr colon block6 ("else" colon block6)?
+while_stmt5 ::= "while" ws expr colon block6 ("else" colon block6)?
+
+if_stmt6 ::= "if" ws expr colon block7 ("elif" ws expr colon block7)* ("else" colon block7)?
+for_stmt6 ::= "for" ws target ws "in" ws expr colon block7 ("else" colon block7)?
+while_stmt6 ::= "while" ws expr colon block7 ("else" colon block7)?
+
+if_stmt7 ::= "if" ws expr colon block8 ("elif" ws expr colon block8)* ("else" colon block8)?
+for_stmt7 ::= "for" ws target ws "in" ws expr colon block8 ("else" colon block8)?
+while_stmt7 ::= "while" ws expr colon block8 ("else" colon block8)?
+
+if_stmt8 ::= "if" ws expr colon block9 ("elif" ws expr colon block9)* ("else" colon block9)?
+for_stmt8 ::= "for" ws target ws "in" ws expr colon block9 ("else" colon block9)?
+while_stmt8 ::= "while" ws expr colon block9 ("else" colon block9)?
+
+if_stmt9 ::= "if" ws expr colon block10 ("elif" ws expr colon block10)* ("else" colon block10)?
+for_stmt9 ::= "for" ws target ws "in" ws expr colon block10 ("else" colon block10)?
+while_stmt9 ::= "while" ws expr colon block10 ("else" colon block10)?
+
+# ---------------- statements ----------------
+
+simple_stmt ::= assign_stmt
+              | return_stmt
+              | expr_stmt
+              | pass_stmt
+              | break_stmt
+              | continue_stmt
+
+pass_stmt ::= "pass"
+break_stmt ::= "break"
+continue_stmt ::= "continue"
+
+assign_stmt ::= target ws? assign ws? expr
+
+target ::= name
+         | atom dot name
+         | atom lbrack expr rbrack
+
+return_stmt ::= "return" (ws expr)?
+
+expr_stmt ::= expr
+
+# ---------------- expressions ----------------
+
+expr ::= or_test
+
+or_test ::= and_test (ws "or" ws and_test)*
+and_test ::= not_test (ws "and" ws not_test)*
+not_test ::= "not" ws not_test
+            | comparison
+
+comparison ::= arith_expr (ws? comp_op ws? arith_expr)*
+
+comp_op ::= lt | gt | equals | gt_eq | lt_eq | not_eq
+          | "in"
+          | "not" ws "in"
+          | "is"
+          | "is" ws "not"
+
+arith_expr ::= term (ws? (add | minus) ws? term)*
+term ::= factor (ws? (star | div | mod | idiv) ws? factor)*
+
+factor ::= (add | minus | not_op) ws? factor
+         | power
+
+power ::= atom_expr (ws? power_op ws? factor)?
+
+atom_expr ::= atom trailer*
+
+trailer ::= lparen arg_list? rparen
+          | dot name
+          | lbrack expr rbrack
+
+arg_list ::= expr (comma ws? expr)*
+
+atom ::= name
+       | number
+       | string
+       | "None"
+       | "True"
+       | "False"
+       | lparen ws? expr ws? rparen
+       | lbrack list_items? rbrack
+       | lbrace dict_items? rbrace
+
+list_items ::= expr (comma ws? expr)* comma?
+
+dict_items ::= dict_item (comma ws? dict_item)* comma?
+dict_item ::= expr ws? colon ws? expr
+
+# ---------------- terminals (xgrammar EBNF) ----------------
+
+newline ::= "\n"
+ws ::= " "
+comma ::= ","
+dot ::= "."
+colon ::= ":"
+lparen ::= "("
+rparen ::= ")"
+lbrack ::= "["
+rbrack ::= "]"
+lbrace ::= "{"
+rbrace ::= "}"
+
+assign ::= "="
+arrow ::= "->"
+
+add ::= "+"
+minus ::= "-"
+star ::= "*"
+div ::= "/"
+mod ::= "%"
+idiv ::= "//"
+power_op ::= "**"
+not_op ::= "~"
+
+lt ::= "<"
+gt ::= ">"
+equals ::= "=="
+gt_eq ::= ">="
+lt_eq ::= "<="
+not_eq ::= "!="
+
+indent1 ::= "    "
+indent2 ::= "        "
+indent3 ::= "            "
+indent4 ::= "                "
+indent5 ::= "                    "
+indent6 ::= "                        "
+indent7 ::= "                            "
+indent8 ::= "                                "
+indent9 ::= "                                    "
+indent10 ::= "                                        "
+
+# 词法规则（与 python3.cfg 一致）
+# 注意：xgrammar 的 EBNF 正则采用字符类/重复等形式，不能写成 /regex/，否则会在 '/' 处报 lexer error。
+name ::= [A-Za-z_] [A-Za-z0-9_]*
+number ::= [0-9]+ ("." [0-9]+)?
+any ::= [\x00-\x7F]
+string ::= "\"" ([^\"\\] | "\\" any)* "\""
+
+type_name ::= name (dot name)*

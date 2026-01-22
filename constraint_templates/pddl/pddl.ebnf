@@ -1,0 +1,237 @@
+# EBNF grammar for PDDL, converted from a Lark grammar
+
+root ::= pddl_doc
+
+pddl_doc ::= (domain | problem)
+
+# -------- DOMAINS --------
+
+domain ::= "(" ws "define" ws domain_name ws require_def? ws types_def? ws constants_def? ws predicates_def? ws functions_def? ws constraints? ws structure_def* ws ")"
+
+domain_name ::= "(" ws "domain" ws NAME ws ")"
+
+require_def ::= "(" ws ":requirements" ws REQUIRE_KEY+ ws ")"
+
+types_def ::= "(" ws ":types" ws typed_name_list ws ")"
+
+typed_name_list ::= (NAME (ws NAME)*) | (single_type_name_list (ws single_type_name_list)* (ws NAME)*)
+
+single_type_name_list ::= NAME (ws NAME)* ws "-" ws type_
+
+type_ ::= ("(" ws "either" ws prim_type (ws prim_type)+ ws ")") | prim_type
+
+prim_type ::= NAME
+
+functions_def ::= "(" ws ":functions" ws function_list ws ")"
+
+function_list ::= (atomic_function_skeleton (ws atomic_function_skeleton)* (ws "-" ws function_type)?)?
+
+atomic_function_skeleton ::= "(" ws function_symbol ws typed_variable_list ws ")"
+
+function_symbol ::= NAME
+
+function_type ::= "number"
+
+constants_def ::= "(" ws ":constants" ws typed_name_list ws ")"
+
+predicates_def ::= "(" ws ":predicates" ws atomic_formula_skeleton (ws atomic_formula_skeleton)* ws ")"
+
+atomic_formula_skeleton ::= "(" ws predicate ws typed_variable_list ws ")"
+
+predicate ::= NAME
+
+typed_variable_list ::= (VARIABLE (ws VARIABLE)*) | (single_type_var_list (ws single_type_var_list)* (ws VARIABLE)*)
+
+single_type_var_list ::= VARIABLE (ws VARIABLE)* ws "-" ws type_
+
+constraints ::= "(" ws ":constraints" ws con_gd ws ")"
+
+structure_def ::= action_def | durative_action_def | derived_def
+
+# -------- ACTIONS --------
+
+action_def ::= "(" ws ":action" ws action_symbol ws ":parameters" ws "(" ws typed_variable_list ws ")" ws action_def_body ws ")"
+
+action_symbol ::= NAME
+
+action_def_body ::= (":precondition" ws (empty_parens | goal_desc))? (ws ":effect" ws (empty_parens | effect))?
+
+empty_parens ::= "(" ws ")"
+
+goal_desc ::= atomic_term_formula
+        | "(" ws "and" ws goal_desc_list? ws ")"
+        | "(" ws "or" ws goal_desc_list? ws ")"
+        | "(" ws "not" ws goal_desc ws ")"
+        | "(" ws "imply" ws goal_desc ws goal_desc ws ")"
+        | "(" ws "exists" ws "(" ws typed_variable_list ws ")" ws goal_desc ws ")"
+        | "(" ws "forall" ws "(" ws typed_variable_list ws ")" ws goal_desc ws ")"
+        | f_comp
+
+goal_desc_list ::= goal_desc (ws goal_desc)*
+
+f_comp ::= "(" ws binary_comp ws f_exp ws f_exp ws ")"
+
+atomic_term_formula ::= "(" ws predicate (ws term)* ws ")"
+
+term ::= NAME | VARIABLE
+
+# -------- DURATIVE ACTIONS --------
+
+durative_action_def ::= "(" ws ":durative-action" ws action_symbol ws ":parameters" ws "(" ws typed_variable_list ws ")" ws da_def_body ws ")"
+
+da_def_body ::= (":duration" ws duration_constraint)
+          | (":condition" ws (empty_parens | da_gd))
+          | (":effect" ws (empty_parens | da_effect))
+
+da_gd ::= pref_timed_gd
+    | "(" ws "and" ws da_gd_list? ws ")"
+    | "(" ws "forall" ws "(" ws typed_variable_list ws ")" ws da_gd ws ")"
+
+da_gd_list ::= da_gd (ws da_gd)*
+
+pref_timed_gd ::= timed_gd | "(" ws "preference" (ws NAME)? ws timed_gd ws ")"
+
+timed_gd ::= "(" ws "at" ws time_specifier ws goal_desc ws ")"
+        | "(" ws "over" ws interval ws goal_desc ws ")"
+
+time_specifier ::= "start" | "end"
+
+interval ::= "all"
+
+# -------- DERIVED --------
+
+derived_def ::= "(" ws ":derived" ws typed_variable_list ws goal_desc ws ")"
+
+# -------- EXPRESSIONS --------
+
+f_exp ::= NUMBER
+    | "(" ws binary_op ws f_exp ws f_exp2 ws ")"
+    | "(" ws "-" ws f_exp ws ")"
+    | f_head
+
+f_exp2 ::= f_exp
+
+f_head ::= "(" ws function_symbol (ws term)* ws ")" | function_symbol
+
+effect ::= "(" ws "and" ws c_effect_list? ws ")" | c_effect
+
+c_effect_list ::= c_effect (ws c_effect)*
+
+c_effect ::= "(" ws "forall" ws "(" ws typed_variable_list ws ")" ws effect ws ")"
+      | "(" ws "when" ws goal_desc ws cond_effect ws ")"
+      | p_effect
+
+p_effect ::= "(" ws assign_op ws f_head ws f_exp ws ")"
+      | "(" ws "not" ws atomic_term_formula ws ")"
+      | atomic_term_formula
+
+cond_effect ::= "(" ws "and" ws p_effect_list? ws ")" | p_effect
+
+p_effect_list ::= p_effect (ws p_effect)*
+
+binary_op ::= "*" | "+" | "-" | "/"
+
+binary_comp ::= ">" | "<" | "=" | ">=" | "<="
+
+assign_op ::= "assign" | "scale-up" | "scale-down" | "increase" | "decrease"
+
+# -------- DURATIONS --------
+
+duration_constraint ::= "(" ws "and" ws simple_duration_constraint (ws simple_duration_constraint)+ ws ")"
+                   | empty_parens
+                   | simple_duration_constraint
+
+simple_duration_constraint ::= "(" ws dur_op ws "?duration" ws dur_value ws ")"
+                         | "(" ws "at" ws time_specifier ws simple_duration_constraint ws ")"
+
+dur_op ::= "<=" | ">=" | "="
+
+dur_value ::= NUMBER | f_exp
+
+da_effect ::= "(" ws "and" ws da_effect_list? ws ")"
+         | timed_effect
+         | "(" ws "forall" ws "(" ws typed_variable_list ws ")" ws da_effect ws ")"
+         | "(" ws "when" ws da_gd ws timed_effect ws ")"
+         | "(" ws assign_op ws f_head ws f_exp_da ws ")"
+
+da_effect_list ::= da_effect (ws da_effect)*
+
+timed_effect ::= "(" ws "at" ws time_specifier ws da_effect ws ")"
+            | "(" ws "at" ws time_specifier ws f_assign_da ws ")"
+            | "(" ws assign_op ws f_head ws f_exp ws ")"
+
+f_assign_da ::= "(" ws assign_op ws f_head ws f_exp_da ws ")"
+
+f_exp_da ::= "(" ws ((binary_op ws f_exp_da ws f_exp_da) | ("-" ws f_exp_da)) ws ")"
+        | "?duration"
+        | f_exp
+
+# -------- PROBLEMS --------
+
+problem ::= "(" ws "define" ws problem_decl ws problem_domain ws require_def? ws object_decl? ws init_ ws goal ws prob_constraints? ws metric_spec? ws ")"
+
+problem_decl ::= "(" ws "problem" ws NAME ws ")"
+
+problem_domain ::= "(" ws ":domain" ws NAME ws ")"
+
+object_decl ::= "(" ws ":objects" ws typed_name_list ws ")"
+
+init_ ::= "(" ws ":init" ws init_el* ws ")"
+
+init_el ::= name_literal
+       | "(" ws "=" ws f_head ws NUMBER ws ")"
+       | "(" ws "at" ws NUMBER ws name_literal ws ")"
+
+name_literal ::= atomic_name_formula
+            | "(" ws "not" ws atomic_name_formula ws ")"
+
+atomic_name_formula ::= "(" ws predicate (ws NAME)* ws ")"
+
+goal ::= "(" ws ":goal" ws goal_desc ws ")"
+
+prob_constraints ::= "(" ws ":constraints" ws pref_con_gd ws ")"
+
+pref_con_gd ::= "(" ws "and" ws pref_con_gd* ws ")"
+           | "(" ws "forall" ws "(" ws typed_variable_list ws ")" ws pref_con_gd ws ")"
+           | "(" ws "preference" (ws NAME)? ws con_gd ws ")"
+           | con_gd
+
+metric_spec ::= "(" ws ":metric" ws optimization ws metric_f_exp ws ")"
+
+optimization ::= "minimize" | "maximize"
+
+metric_f_exp ::= "(" ws binary_op ws metric_f_exp ws metric_f_exp ws ")"
+            | "(" ws ("*" | "/") ws metric_f_exp ws metric_f_exp+ ws ")"
+            | "(" ws "-" ws metric_f_exp ws ")"
+            | NUMBER
+            | "(" ws function_symbol (ws NAME)* ws ")"
+            | function_symbol
+            | "total-time"
+            | "(" ws "is-violated" ws NAME ws ")"
+
+# -------- CONSTRAINTS (con_gd) --------
+
+con_gd ::= "(" ws "and" ws con_gd* ws ")"
+     | "(" ws "forall" ws "(" ws typed_variable_list ws ")" ws con_gd ws ")"
+     | "(" ws "at" ws "end" ws goal_desc ws ")"
+     | "(" ws "always" ws goal_desc ws ")"
+     | "(" ws "sometime" ws goal_desc ws ")"
+     | "(" ws "within" ws NUMBER ws goal_desc ws ")"
+     | "(" ws "at-most-once" ws goal_desc ws ")"
+     | "(" ws "sometime-after" ws goal_desc ws goal_desc ws ")"
+     | "(" ws "sometime-before" ws goal_desc ws goal_desc ws ")"
+     | "(" ws "always-within" ws NUMBER ws goal_desc ws goal_desc ws ")"
+     | "(" ws "hold-during" ws NUMBER ws NUMBER ws goal_desc ws ")"
+     | "(" ws "hold-after" ws NUMBER ws goal_desc ws ")"
+
+# ========== Terminals ==========
+ws ::= ([ \t\n\r]+)?
+
+letter ::= [a-zA-Z]
+digit ::= [0-9]
+
+NAME ::= letter ( letter | digit | "-" | "_" )*
+VARIABLE ::= "?" NAME
+NUMBER ::= digit+ ( "." digit+ )?
+
+REQUIRE_KEY ::= ":" ( "strips" | "typing" | "negative-preconditions" | "disjunctive-preconditions" | "equality" | "existential-preconditions" | "universal-preconditions" | "quantified-preconditions" | "conditional-effects" | "fluents" | "adl" | "durative-actions" | "derived-predicates" | "timed-initial-literals" | "preferences" | "constraints" )
