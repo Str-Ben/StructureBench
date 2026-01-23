@@ -1,6 +1,14 @@
 # StructureBench
 
-Benchmarking structured outputs for text/VL models with centralized prompt loaders and dataset-specific evaluators.
+StructureBench is a comprehensive **plug-and-play benchmark suite** for evaluating structured generation on resource-constrained edge devices. It brings together over 11 publicly-available datasets that span six representative task families—information extraction, tool calling, SQL/code completion, mathematical reasoning, scientific report generation and DSL synthesis—covering both text-only and vision-language inputs. For every task we release unified prompt templates, machine-checkable grammars and automatic evaluators, so that results obtained with different models or decoders remain directly comparable.
+
+![loading overview.png failed](docs/images/overview.png)
+
+The suite currently supports three state-of-the-art constrained decoding frameworks—Outlines, XGrammar and Guidance—alongside a prompt-only baseline, and ships with wrappers that make switching between them as simple as passing a `--mode` flag. On the model side, StructureBench targets compact language and vision-language models between 0.5 B and 8 B parameters, a regime where instruction-following is brittle and structural guarantees matter most.
+
+StructureBench logs metrics at three complementary levels: (i) syntactic compliance, (ii) task-level semantic accuracy and (iii) the **marginal gain** in semantics attributable exclusively to constraints within the space of valid outputs. Additional telemetry captures runtime latency, memory footprint and token-level trace files to support fine-grained diagnostics.
+
+All components are lightweight and self-contained—the entire benchmark, including datasets, grammars and evaluation scripts, runs on a single consumer-grade GPU laptop and can be extended with a single YAML entry. We publish baseline results for 12 open-source models and provide best-practice recipes that map application scenarios to reliable model–decoder combinations, empowering developers to ship trustworthy on-device structured generation out of the box.
 
 ## Environment & Dependencies
 - Python 3.10 recommended; typical runs use a CUDA GPU (install a matching GPU wheel for torch/transformers).
@@ -171,3 +179,4 @@ See `eval/*_eval.py` for per-dataset flags; most accept `--pred_file`, `--output
 - `common/`: shared CLI/model helpers (`cli.py`, `text_model_utils.py`).
 - `data/`: centralized prompt loaders (`prompts.py`, `bfcl_prompts.py`), generic generators (`text_models_generate.py`, `vl_models_generate.py`).
 - `eval/`: per-dataset evaluators and logging (`bfcl_eval/`, `x_eval.py`, `eval_logging.py`).
+
