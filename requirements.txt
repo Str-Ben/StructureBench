@@ -1,0 +1,31 @@
+# Core ML and LLM
+torch
+transformers
+datasets
+accelerate
+vllm
+sentencepiece
+
+# Constrained Generation
+xgrammar
+outlines
+guidance
+
+# other dependencies
+jsonschema
+lark
+penman
+smatch
+sympy
+tarski
+partialsmiles
+rdkit
+sqlglot
+pandas
+tqdm
+dotenv
+tenacity
+tree_sitter
+tree_sitter_java
+tree_sitter_javascript
+tree_sitter_python

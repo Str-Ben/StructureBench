@@ -2,7 +2,7 @@
 
 StructureBench is a comprehensive **plug-and-play benchmark suite** for evaluating structured generation on resource-constrained edge devices. It brings together over 11 publicly-available datasets that span six representative task families—information extraction, tool calling, SQL/code completion, mathematical reasoning, scientific report generation and DSL synthesis—covering both text-only and vision-language inputs. For every task we release unified prompt templates, machine-checkable grammars and automatic evaluators, so that results obtained with different models or decoders remain directly comparable.
 
-Leaderboard: https://str-ben.github.io/
+**[Click here jump to our leaderboard](https://str-ben.github.io/)**
 ![loading overview.png failed](docs/images/overview.png)
 
 The suite currently supports three state-of-the-art constrained decoding frameworks—Outlines, XGrammar and Guidance—alongside a prompt-only baseline, and ships with wrappers that make switching between them as simple as passing a `--mode` flag. On the model side, StructureBench targets compact language and vision-language models between 0.5 B and 8 B parameters, a regime where instruction-following is brittle and structural guarantees matter most.
@@ -16,7 +16,11 @@ All components are lightweight and self-contained—the entire benchmark, includ
 - Core runtime: `torch` (GPU build), `transformers`, `accelerate`, `datasets`, `tqdm`, `filelock`, `sentencepiece`, `pillow` (for VLM).
 - XGrammar constrained decoding (optional): `xgrammar` (install from PyPI or `pip install -e xgrammar` to use the bundled source).
 - BFCL extras (imports needed even in prompt-mode): `tree_sitter`, `tree_sitter_java`, `tree_sitter_javascript`, `anthropic`, `cohere`, `openai`, `google-genai`, `mistralai`, `writerai`, `qwen-agent`, `datamodel-code-generator`, `boto3`.
-- Install example (CUDA 11.8 wheel; adjust for your CUDA/toolkit):
+- You can install all dependencies with:
+  ```bash
+  pip install -r requirements.txt
+  ```
+- Install dependencies you need (manually pick the version that matches your machine/CUDA toolkit):
   ```bash
   # torch GPU wheel (pick the right cuXXX index for your driver)
   pip install torch==2.7.1+cu118 --index-url https://download.pytorch.org/whl/cu118
@@ -180,4 +184,32 @@ See `eval/*_eval.py` for per-dataset flags; most accept `--pred_file`, `--output
 - `common/`: shared CLI/model helpers (`cli.py`, `text_model_utils.py`).
 - `data/`: centralized prompt loaders (`prompts.py`, `bfcl_prompts.py`), generic generators (`text_models_generate.py`, `vl_models_generate.py`).
 - `eval/`: per-dataset evaluators and logging (`bfcl_eval/`, `x_eval.py`, `eval_logging.py`).
+
+## Dataset layout and overrides
+
+By default, datasets live under `datasets/` and are referenced by `data/prompts.py`.
+Use `--data_file` in generators/evaluators to point to a local file.
+
+BFCL specifics:
+
+- Prompt loader: pass `--prompt_kwargs '{"data_root":"/path/to/bfcl_eval/data"}'`.
+- Evaluator: pass `--data_root /path/to/bfcl_eval/data`.
+
+Dataset keys and default folders:
+
+| Dataset key   | HF dataset repo                         | Default local folder                |
+| ------------- | --------------------------------------- | ----------------------------------- |
+| amr           | hoshuhan/amr-3-parsed                   | datasets/amr-3-parsed               |
+| ape21         | MU-NLPC/Calc-ape210k                    | datasets/Calc-ape210k               |
+| bigmath       | SynthLabsAI/Big-Math-RL-Verified        | datasets/Big-Math-RL-Verified       |
+| bfcl          | (bundled)                               | eval/bfcl_eval/data                 |
+| chequessample | shivalikasingh/cheques_sample_data      | datasets/cheques_sample_data        |
+| folio         | yale-nlp/FOLIO                          | datasets/FOLIO                      |
+| hermes        | NousResearch/hermes-function-calling-v1 | datasets/hermes-function-calling-v1 |
+| humaneval     | openai/openai_humaneval                 | datasets/openai_humaneval           |
+| jsschemabench | epfl-dlab/JSONSchemaBench               | datasets/JSONSchemaBench            |
+| latexocr      | linxy/LaTeX_OCR                         | datasets/LaTeX_OCR                  |
+| planetarium   | BatsResearch/planetarium                | datasets/planetarium                |
+| smileseval    | eth-sri/smiles-eval                     | datasets/smiles-eval                |
+| text2sql      | gretelai/synthetic_text_to_sql          | datasets/synthetic_text_to_sql      |
 
