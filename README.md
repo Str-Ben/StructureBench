@@ -3,6 +3,7 @@
 StructureBench is a comprehensive **plug-and-play benchmark suite** for evaluating structured generation on resource-constrained edge devices. It brings together over 11 publicly-available datasets that span six representative task families—information extraction, tool calling, SQL/code completion, mathematical reasoning, scientific report generation and DSL synthesis—covering both text-only and vision-language inputs. For every task we release unified prompt templates, machine-checkable grammars and automatic evaluators, so that results obtained with different models or decoders remain directly comparable.
 
 **[Click here jump to our leaderboard](https://str-ben.github.io/)**
+
 ![loading overview.png failed](docs/images/overview.png)
 
 The suite currently supports three state-of-the-art constrained decoding frameworks—Outlines, XGrammar and Guidance—alongside a prompt-only baseline, and ships with wrappers that make switching between them as simple as passing a `--mode` flag. On the model side, StructureBench targets compact language and vision-language models between 0.5 B and 8 B parameters, a regime where instruction-following is brittle and structural guarantees matter most.
