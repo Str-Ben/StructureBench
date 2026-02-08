@@ -425,7 +425,6 @@ def parse_args():
         "--mode",
         type=str,
         default="prompt",
-        choices=["prompt", "xgrammar", "guidance", "outlines", "llama_cpp"],
         help="生成模式：prompt（仅 prompt）、xgrammar、guidance、outlines、llama_cpp。",
     )
     parser.add_argument(

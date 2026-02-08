@@ -75,6 +75,7 @@ class GenerationMode(str, Enum):
     GUIDANCE = "guidance"
     OUTLINES = "outlines"
     LLAMA_CPP = "llama_cpp"
+    SGLANG = "sglang"
 
 
 class ConstrainedGeneratorBase(ABC):
@@ -514,6 +515,64 @@ class LlamaCppGenerator(ConstrainedGeneratorBase):
         return output["choices"][0]["text"]
 
 
+class SGLangGenerator(ConstrainedGeneratorBase):
+    def __init__(self, model: Any, tokenizer: Any, **kwargs):
+        super().__init__(model, tokenizer, **kwargs)
+        import sglang as sgl
+        self.sgl = sgl
+
+        model_path = kwargs.get("model_name_or_path")
+        mode = kwargs.get("mode")
+        grammar_backend = mode.split("@")[-1]
+
+        print("&"*100)
+        print("sglang init "+grammar_backend)
+        print("&"*100)
+
+        self.engine = self.sgl.Engine(
+            model_path=model_path,
+            grammar_backend=grammar_backend,
+        )
+
+    def generate(
+        self,
+        prompt: Optional[str] = None,
+        max_new_tokens: int = 256,
+        temperature: float = 0.0,
+        top_p: float = 1.0,
+        json_schema: Optional[Union[str, Dict[str, Any]]] = None,
+        ebnf: Optional[str] = None,
+        regex: Optional[str] = None,
+        **kwargs,
+    ) -> str:
+
+        print("&"*100)
+        print("sglang generate")
+        print("&"*100)
+        
+        if json_schema is not None and isinstance(json_schema, dict):
+            json_schema = json.dumps(json_schema, ensure_ascii=False)
+
+        sampling_params: Dict[str, Any] = {
+            "temperature": float(temperature),
+            "top_p": float(top_p),
+        }
+
+        if ebnf is not None:
+            sampling_params["ebnf"] = ebnf
+        if regex is not None:
+            sampling_params["regex"] = regex
+        if json_schema is not None:
+            sampling_params["json_schema"] = json_schema
+
+        outputs = self.engine.generate([prompt], sampling_params)
+        
+        out0 = outputs[0]
+        if isinstance(out0, dict) and "text" in out0:
+            return str(out0["text"])
+        return str(out0)
+
+
 # ============== Factory Class ==============
 
 class ConstrainedGenerator:
@@ -523,6 +582,7 @@ class ConstrainedGenerator:
         GenerationMode.GUIDANCE: GuidanceGenerator,
         GenerationMode.OUTLINES: OutlinesGenerator,
         GenerationMode.LLAMA_CPP: LlamaCppGenerator,
+        GenerationMode.SGLANG: SGLangGenerator,
     }
 
     def __init__(
@@ -532,17 +592,14 @@ class ConstrainedGenerator:
         tokenizer: Any = None,
         **kwargs,
     ):
-        if isinstance(mode, str):
-            try:
-                mode = GenerationMode(mode)
-            except ValueError:
-                raise ValueError(f"Invalid generation mode: {mode}. Supported modes: {[m.value for m in GenerationMode]}")
-
+        orimode = mode
+        mode = GenerationMode(mode.split("@")[0])
+        
         self.mode = mode
         generator_cls = self._generators.get(mode)
         if generator_cls is None:
             raise ValueError(f"unsupported generation mode: {mode}")
-
+        kwargs["mode"] = orimode
         self.generator = generator_cls(model, tokenizer, **kwargs)
         logger.info(f"initialized {mode.value} constrained generator")
 
