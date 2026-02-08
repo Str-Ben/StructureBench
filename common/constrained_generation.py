@@ -94,6 +94,20 @@ class ConstrainedGeneratorBase(ABC):
 
 class PromptOnlyGenerator(ConstrainedGeneratorBase):
 
+    def __init__(self, model: Any, tokenizer: Any, **kwargs):
+        super().__init__(model, tokenizer, **kwargs)
+        import sglang as sgl
+        self.sgl = sgl
+
+        model_path = kwargs.get("model_name_or_path")
+        
+        self.engine = self.sgl.Engine(
+            model_path=model_path,
+            tp_size=8,
+            mem_fraction_static=0.8,
+            disable_cuda_graph=True,
+        )
+
     def generate(
         self,
         prompt: Optional[str] = None,
@@ -104,43 +118,23 @@ class PromptOnlyGenerator(ConstrainedGeneratorBase):
         frequency_penalty: float = 0.0,
         **kwargs,
     ) -> str:
-        model_inputs = _build_model_inputs_with_chat(self.tokenizer, prompt, self.model)
-        model_inputs = {k: v.to(self.model.device) for k, v in model_inputs.items()}
-
-        # 参考 text_model_utils.py 的 penalty 实现
-        supports_repetition = hasattr(self.model.generation_config, "repetition_penalty")
-        supports_frequency = hasattr(self.model.generation_config, "frequency_penalty")
-
-        logits_processors = []
-        if not supports_repetition and repetition_penalty != 1.0 and RepetitionPenaltyLogitsProcessor:
-            logits_processors.append(RepetitionPenaltyLogitsProcessor(repetition_penalty))
-        if not supports_frequency and frequency_penalty != 0.0 and FrequencyPenaltyLogitsProcessor:
-            logits_processors.append(FrequencyPenaltyLogitsProcessor(frequency_penalty))
-
-        generation_kwargs = {
-            "max_new_tokens": max_new_tokens,
-            "do_sample": (temperature > 0.0),
-            "temperature": temperature if temperature > 0.0 else None,
-            "top_p": top_p,
-            "pad_token_id": self.tokenizer.pad_token_id,
-            "eos_token_id": self.tokenizer.eos_token_id,
+        sampling_params: Dict[str, Any] = {
+            "max_new_tokens": int(max_new_tokens),
+            "temperature": float(temperature),
+            "top_p": float(top_p),
         }
-        if supports_repetition:
-            generation_kwargs["repetition_penalty"] = repetition_penalty
-        if supports_frequency:
-            generation_kwargs["frequency_penalty"] = frequency_penalty
-        if logits_processors:
-            generation_kwargs["logits_processor"] = LogitsProcessorList(logits_processors)
 
-        with torch.inference_mode():
-            outputs = self.model.generate(**model_inputs, **generation_kwargs)
-        is_encdec = getattr(getattr(self.model, "config", object), "is_encoder_decoder", False)
-        if is_encdec:
-            new_tokens = outputs[0]
-        else:
-            cut = model_inputs["input_ids"].shape[1]
-            new_tokens = outputs[0][cut:]
-        return self.tokenizer.decode(new_tokens, skip_special_tokens=True)
+        if repetition_penalty is not None and float(repetition_penalty) != 1.0:
+            sampling_params["repetition_penalty"] = float(repetition_penalty)
+        if frequency_penalty is not None and float(frequency_penalty) != 0.0:
+            sampling_params["frequency_penalty"] = float(frequency_penalty)
+
+        outputs = self.engine.generate([prompt], sampling_params)
+
+        out0 = outputs[0]
+        if isinstance(out0, dict) and "text" in out0:
+            return str(out0["text"])
+        return str(out0)
 
 
 class XGrammarGenerator(ConstrainedGeneratorBase):
@@ -532,6 +526,9 @@ class SGLangGenerator(ConstrainedGeneratorBase):
         self.engine = self.sgl.Engine(
             model_path=model_path,
             grammar_backend=grammar_backend,
+            tp_size=8,
+            mem_fraction_static=0.8,
+            disable_cuda_graph=True,
         )
 
     def generate(
@@ -554,6 +551,7 @@ class SGLangGenerator(ConstrainedGeneratorBase):
             json_schema = json.dumps(json_schema, ensure_ascii=False)
 
         sampling_params: Dict[str, Any] = {
+            "max_new_tokens": int(max_new_tokens),
             "temperature": float(temperature),
             "top_p": float(top_p),
         }
